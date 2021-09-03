@@ -26,6 +26,8 @@ import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
+import androidx.navigation.fragment.findNavController
 import com.example.android.firebaseui_login_sample.databinding.FragmentMainBinding
 import com.firebase.ui.auth.AuthUI
 import com.firebase.ui.auth.IdpResponse
@@ -54,6 +56,10 @@ class MainFragment : Fragment() {
         observeAuthenticationState()
 
         binding.authButton.setOnClickListener { launchSignInFlow() }
+        binding.settingsBtn.setOnClickListener {
+            val action = MainFragmentDirections.actionMainFragmentToSettingsFragment()
+            findNavController().navigate(action)
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -93,8 +99,32 @@ class MainFragment : Fragment() {
         // TODO If there is no logged in user, authButton should display Login and launch the sign
         //  in screen when clicked. There should also be no personalization of the message
         //  displayed.
-    }
 
+        viewModel.authenticationState.observe(viewLifecycleOwner, Observer { authenticationState ->
+            when (authenticationState) {
+                LoginViewModel.AuthenticationState.AUTHENTICATED -> {
+                    binding.authButton.text = getString(R.string.logout_button_text)
+                    binding.authButton.setOnClickListener {
+                        // TODO implement logging out user in next step
+                        AuthUI.getInstance().signOut(requireContext())
+                    }
+
+                    // TODO 2. If the user is logged in,
+                    // you can customize the welcome message they see by
+                    // utilizing the getFactWithPersonalization() function provided
+                    binding.welcomeText.text = getFactWithPersonalization(factToDisplay)
+                }
+                else -> {
+                    // TODO 3. Lastly, if there is no logged-in user,
+                    // auth_button should display Login and
+                    //  launch the sign in screen when clicked.
+                    binding.authButton.text = getString(R.string.login_button_text)
+                    binding.authButton.setOnClickListener { launchSignInFlow() }
+                    binding.welcomeText.text = factToDisplay
+                }
+            }
+        })
+    }
 
     private fun getFactWithPersonalization(fact: String): String {
         return String.format(
